@@ -1385,6 +1385,21 @@ public class RIL extends BaseCommands implements CommandsInterface {
         }
     }
 
+    /** Requests already reported as unsupported by this device's radio HAL. */
+    private final Set<String> mUnsupportedRequestsLogged = ConcurrentHashMap.newKeySet();
+
+    /**
+     * A request newer than the radio HAL is an expected capability gap on devices with
+     * older HALs (e.g. Pixel 3 XL / 4a on radio 1.4/1.5), not an error: the caller gets
+     * REQUEST_NOT_SUPPORTED and handles it. Log it at debug level, once per request,
+     * instead of an error on every call (several per boot and per Settings refresh).
+     */
+    private void logUnsupportedRequest(String request, String msg) {
+        if (mUnsupportedRequestsLogged.add(request)) {
+            riljLog(msg + " (logged once)");
+        }
+    }
+
     private boolean canMakeRequest(String request, RadioServiceProxy proxy, Message result,
             HalVersion version) {
         int service = HAL_SERVICE_RADIO;
@@ -1414,7 +1429,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
             return false;
         }
         if (mHalVersion.get(service).less(version)) {
-            riljLoge(String.format("%s not supported on service %s < %s.",
+            logUnsupportedRequest(request, String.format("%s not supported on service %s < %s.",
                     request, serviceToString(service), version));
             if (result != null) {
                 AsyncResult.forMessage(result, null,
