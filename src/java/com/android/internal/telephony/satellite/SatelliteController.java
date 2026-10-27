@@ -3511,7 +3511,7 @@ public class SatelliteController extends Handler {
         if (mSatelliteSessionController != null) {
             mSatelliteSessionController.registerForSatelliteModemStateChanged(callback);
         } else {
-            ploge("registerForSatelliteModemStateChanged: mSatelliteSessionController"
+            logNoSatellite("registerForSatelliteModemStateChanged: mSatelliteSessionController"
                     + " is not initialized yet");
             return SatelliteManager.SATELLITE_RESULT_INVALID_TELEPHONY_STATE;
         }
@@ -3530,7 +3530,7 @@ public class SatelliteController extends Handler {
         if (mSatelliteSessionController != null) {
             mSatelliteSessionController.unregisterForSatelliteModemStateChanged(callback);
         } else {
-            ploge("unregisterForModemStateChanged: mSatelliteSessionController"
+            logNoSatellite("unregisterForModemStateChanged: mSatelliteSessionController"
                     + " is not initialized yet");
         }
         plogd("unregisterForModemStateChanged: remove Listeners for ModemState");
@@ -7204,7 +7204,7 @@ public class SatelliteController extends Handler {
     private void startNtnEligibilityHysteresisTimer() {
         Phone satellitePhone = getSatellitePhone();
         if (satellitePhone == null) {
-            ploge("startNtnEligibilityHysteresisTimer: mSatellitePhone is null.");
+            logNoSatellite("startNtnEligibilityHysteresisTimer: mSatellitePhone is null.");
             return;
         }
 
@@ -7226,7 +7226,7 @@ public class SatelliteController extends Handler {
     private void updateLastNotifiedNtnEligibilityAndNotify(boolean currentNtnEligibility) {
         Phone satellitePhone = getSatellitePhone();
         if (satellitePhone == null) {
-            ploge("notifyNtnEligibility: mSatellitePhone is null");
+            logNoSatellite("notifyNtnEligibility: mSatellitePhone is null");
             return;
         }
 
@@ -8031,6 +8031,19 @@ public class SatelliteController extends Handler {
         Log.e(TAG, log);
         if (mPersistentLogger != null) {
             mPersistentLogger.error(TAG, log);
+        }
+    }
+
+    /**
+     * Devices without a satellite modem never get a session controller or satellite phone, so
+     * the callers above hit these paths on every poll. Only treat it as an error when the modem
+     * has reported satellite support.
+     */
+    private void logNoSatellite(@NonNull String log) {
+        if (Boolean.TRUE.equals(getIsSatelliteSupported())) {
+            ploge(log);
+        } else {
+            plogd(log);
         }
     }
 
